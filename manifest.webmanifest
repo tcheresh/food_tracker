@@ -1,10 +1,20 @@
 {
+  "id": "./",
   "name": "Food Tracker",
   "short_name": "Food Tracker",
-  "start_url": "./",
+  "description": "Track calories and macros with meal descriptions, photos, and barcode scanning.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
-  "description": "Mobile calorie and macro tracker with photo meal analysis.",
-  "icons": []
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

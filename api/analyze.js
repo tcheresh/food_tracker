@@ -3,8 +3,15 @@ import OpenAI from "openai";
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.status(204).end();
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+    res.setHeader("Allow", "POST, OPTIONS");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -17,7 +24,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "A base64 image data URL is required." });
   }
 
-  // Keep requests to a practical size for a lightweight serverless endpoint.
   if (image.length > 12_000_000) {
     return res.status(413).json({ error: "Image is too large. Please use a smaller photo." });
   }

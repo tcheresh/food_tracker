@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v6';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./barcode.js'];
+const CACHE='food-tracker-v8';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -18,14 +18,23 @@ async function appResponse(request){
   try{
     const fresh=await fetch(request,{cache:'no-store'});
     let html=await fresh.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=6"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=8"></script></body>');
     return new Response(html,{status:fresh.status,statusText:fresh.statusText,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }catch{
     const cached=await caches.match('./index.html');
     if(!cached) return new Response('Offline',{status:503});
     let html=await cached.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=6"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=8"></script></body>');
     return new Response(html,{headers:{'content-type':'text/html; charset=utf-8'}});
+  }
+}
+
+async function networkFirst(request){
+  try{
+    const fresh=await fetch(request,{cache:'no-store'});
+    return fresh;
+  }catch{
+    return (await caches.match(request)) || new Response('',{status:504});
   }
 }
 
@@ -34,6 +43,10 @@ self.addEventListener('fetch',event=>{
   const url=new URL(event.request.url);
   if(event.request.mode==='navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/food_tracker/')){
     event.respondWith(appResponse(event.request));
+    return;
+  }
+  if(url.pathname.endsWith('/barcode.js')){
+    event.respondWith(networkFirst(event.request));
     return;
   }
   event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(resp=>{

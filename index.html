@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Food Tracker</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--card2:#1d2430;--text:#f5f7fa;--muted:#8b949e;--line:#30363d;--accent:#39d98a;--warn:#ffcc66;--danger:#ff6b6b;--blue:#62a8ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}.app{max-width:760px;margin:auto;padding:18px 16px 110px}.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 18px}.brand h1{font-size:24px;margin:0}.brand small{color:var(--muted)}button,.btn{border:0;border-radius:14px;background:var(--accent);color:#07120c;font-weight:800;padding:13px 16px;cursor:pointer}.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}.danger{background:#341a1a;color:#ffb2b2}.iconbtn{padding:10px 12px}.datebar{display:flex;align-items:center;gap:8px;margin-bottom:14px}.datebar input{flex:1}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}.ringrow{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;align-items:center}.bigcal{font-size:38px;font-weight:900;letter-spacing:-1px}.muted{color:var(--muted)}.progress{height:10px;background:#252b33;border-radius:999px;overflow:hidden;margin:10px 0 3px}.progress>span{display:block;height:100%;background:var(--accent);width:0}.macrogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.macro{background:var(--card2);padding:12px;border-radius:14px}.macro b{font-size:18px;display:block}.macro small{color:var(--muted)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.actions button{min-height:54px}.meal{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.meal:first-of-type{border-top:0}.mealmain{flex:1;min-width:0}.mealname{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mealmeta{font-size:13px;color:var(--muted)}.mealcal{text-align:right;font-weight:900}.sectiontitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.sectiontitle h2{font-size:17px;margin:0}.empty{color:var(--muted);padding:14px 0}.bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(13,17,23,.94);backdrop-filter:blur(15px);border-top:1px solid var(--line);padding:10px max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));z-index:10}.bottominner{max-width:760px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.bottom button{background:transparent;color:var(--muted);padding:9px}.bottom button.active{color:var(--accent);background:#143125}.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:30}.modal.open{display:flex}.sheet{background:var(--card);width:100%;max-width:760px;margin:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}.sheethead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet h2{margin:0;font-size:20px}.field{margin:10px 0}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field input,.field select,.field textarea,.datebar input{width:100%;background:#0f141b;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.photoBox{border:1px dashed #46505c;border-radius:16px;padding:12px;text-align:center;background:#11161d}.photoBox img{width:100%;max-height:320px;object-fit:cover;border-radius:12px;display:none}.photoBox input{width:100%;margin-top:10px}.foodrow{background:var(--card2);border-radius:16px;padding:12px;margin:10px 0}.foodrow .head{display:flex;justify-content:space-between;gap:10px}.foodrow input{width:100%;background:#10151c;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px}.foodrow .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.foodrow small{color:var(--muted)}.notice{background:#2a2414;color:#ffe3a3;border:1px solid #554821;border-radius:12px;padding:10px;margin:10px 0;font-size:13px}.success{background:#123222;color:#b8f5d4;border-color:#245f42}.hidden{display:none!important}@media(max-width:420px){.ringrow{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}.macrogrid{gap:6px}.macro{padding:10px}.bigcal{font-size:34px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand"><h1>Food Tracker</h1><small>Calories & macros, without the clutter.</small></div><button class="ghost iconbtn" onclick="openSettings()">⚙️</button></div>
+  <div class="datebar"><button class="ghost iconbtn" onclick="shiftDate(-1)">‹</button><input id="datePick" type="date" onchange="render()"><button class="ghost iconbtn" onclick="shiftDate(1)">›</button></div>
+
+  <section class="card">
+    <div class="ringrow"><div><div class="muted">Calories</div><div><span class="bigcal" id="calNow">0</span> <span class="muted">/ <span id="calTarget">2200</span></span></div><div class="progress"><span id="calBar"></span></div><div class="muted" id="calRemaining">2200 remaining</div></div><div><div class="muted">Protein</div><div style="font-size:28px;font-weight:900"><span id="proteinNow">0</span>g</div><div class="progress"><span id="proteinBar"></span></div><div class="muted"><span id="proteinTarget">180</span>g goal</div></div></div>
+    <div class="macrogrid"><div class="macro"><small>Protein</small><b><span id="pVal">0</span>g</b><small id="pGoal">of 180g</small></div><div class="macro"><small>Carbs</small><b><span id="cVal">0</span>g</b><small id="cGoal">of 220g</small></div><div class="macro"><small>Fat</small><b><span id="fVal">0</span>g</b><small id="fGoal">of 70g</small></div></div>
+  </section>
+
+  <div class="actions"><button onclick="openPhoto()">📷 Analyze meal</button><button class="ghost" onclick="openManual()">＋ Add manually</button></div>
+
+  <section class="card"><div class="sectiontitle"><h2>Meals</h2><button class="ghost" style="padding:8px 10px" onclick="openManual()">Add</button></div><div id="mealList"></div></section>
+
+  <section class="card" id="historyCard"><div class="sectiontitle"><h2>7-day snapshot</h2></div><div id="history"></div></section>
+</div>
+
+<nav class="bottom"><div class="bottominner"><button class="active" onclick="scrollTo({top:0,behavior:'smooth'})">Today</button><button onclick="document.getElementById('historyCard').scrollIntoView({behavior:'smooth'})">History</button><button onclick="openSettings()">Settings</button></div></nav>
+
+<div id="photoModal" class="modal" onclick="backdrop(event,'photoModal')"><div class="sheet"><div class="sheethead"><h2>Analyze a meal</h2><button class="ghost iconbtn" onclick="closeModal('photoModal')">✕</button></div>
+  <div class="photoBox"><img id="preview"><div id="photoHint"><b>Take a picture or choose one</b><div class="muted">Best results: entire plate visible, good light, photo from above.</div></div><input id="photoInput" type="file" accept="image/*" capture="environment" onchange="previewPhoto()"></div>
+  <div class="field"><label>Meal</label><select id="photoMealType"><option>Breakfast</option><option>Lunch</option><option selected>Dinner</option><option>Snack</option></select></div>
+  <div id="analysisNote" class="notice hidden"></div>
+  <button id="analyzeBtn" style="width:100%;margin-top:8px" onclick="analyzePhoto()">Analyze photo</button>
+  <div id="analysisResults" class="hidden"><div style="margin-top:16px;font-weight:800">AI estimate — edit anything that looks wrong</div><div id="foodRows"></div><button class="ghost" style="width:100%" onclick="addFoodRow()">＋ Add food</button><button style="width:100%;margin-top:10px" onclick="saveAnalyzedMeal()">Save meal</button></div>
+</div></div>
+
+<div id="manualModal" class="modal" onclick="backdrop(event,'manualModal')"><div class="sheet"><div class="sheethead"><h2>Add food</h2><button class="ghost iconbtn" onclick="closeModal('manualModal')">✕</button></div>
+  <div class="field"><label>Meal</label><select id="manualMealType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select></div>
+  <div class="field"><label>Food / meal name</label><input id="mName" placeholder="e.g. Chicken, rice & salad"></div>
+  <div class="grid2"><div class="field"><label>Serving / notes</label><input id="mServing" placeholder="e.g. 1 plate"></div><div class="field"><label>Calories</label><input id="mCal" inputmode="decimal" type="number" placeholder="0"></div></div>
+  <div class="grid4"><div class="field"><label>Protein g</label><input id="mP" type="number" inputmode="decimal" placeholder="0"></div><div class="field"><label>Carbs g</label><input id="mC" type="number" inputmode="decimal" placeholder="0"></div><div class="field"><label>Fat g</label><input id="mF" type="number" inputmode="decimal" placeholder="0"></div><div class="field"><label>Fiber g</label><input id="mFiber" type="number" inputmode="decimal" placeholder="0"></div></div>
+  <button style="width:100%" onclick="saveManual()">Save</button>
+</div></div>
+
+<div id="settingsModal" class="modal" onclick="backdrop(event,'settingsModal')"><div class="sheet"><div class="sheethead"><h2>Settings</h2><button class="ghost iconbtn" onclick="closeModal('settingsModal')">✕</button></div>
+  <div class="grid2"><div class="field"><label>Daily calories</label><input id="sCal" type="number"></div><div class="field"><label>Protein g</label><input id="sP" type="number"></div><div class="field"><label>Carbs g</label><input id="sC" type="number"></div><div class="field"><label>Fat g</label><input id="sF" type="number"></div></div>
+  <div class="field"><label>AI backend URL (optional)</label><input id="sApi" placeholder="https://your-backend.example.com/api/analyze"><div class="muted" style="font-size:12px;margin-top:5px">Leave blank when the app and backend share the same domain. Never put an OpenAI API key here.</div></div>
+  <button style="width:100%" onclick="saveSettings()">Save settings</button><button class="danger" style="width:100%;margin-top:10px" onclick="clearAll()">Clear all food history</button>
+</div></div>
+
+<script>
+const STORE='foodTracker.v1';
+const DEFAULT={settings:{cal:2200,p:180,c:220,f:70,api:''},days:{}};
+let state=load(), analysisFoods=[];
+function load(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem(STORE)||'{}'))}catch{return structuredClone(DEFAULT)}}
+function persist(){localStorage.setItem(STORE,JSON.stringify(state))}
+function today(){let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+const datePick=document.getElementById('datePick');datePick.value=today();
+function dayKey(){return datePick.value||today()}
+function meals(){return state.days[dayKey()]||[]}
+function num(v){return Math.max(0,Number(v)||0)}
+function totals(list=meals()){return list.reduce((a,m)=>{a.cal+=num(m.cal);a.p+=num(m.p);a.c+=num(m.c);a.f+=num(m.f);a.fiber+=num(m.fiber);return a},{cal:0,p:0,c:0,f:0,fiber:0})}
+function pct(a,b){return Math.min(100,b?Math.round(a/b*100):0)+'%'}
+function render(){const t=totals(),s=state.settings;calNow.textContent=Math.round(t.cal);calTarget.textContent=s.cal;calBar.style.width=pct(t.cal,s.cal);calRemaining.textContent=t.cal<=s.cal?`${Math.round(s.cal-t.cal)} remaining`:`${Math.round(t.cal-s.cal)} over goal`;proteinNow.textContent=Math.round(t.p);proteinTarget.textContent=s.p;proteinBar.style.width=pct(t.p,s.p);pVal.textContent=Math.round(t.p);cVal.textContent=Math.round(t.c);fVal.textContent=Math.round(t.f);pGoal.textContent=`of ${s.p}g`;cGoal.textContent=`of ${s.c}g`;fGoal.textContent=`of ${s.f}g`;renderMeals();renderHistory()}
+function renderMeals(){const list=meals(),el=mealList;if(!list.length){el.innerHTML='<div class="empty">No food logged yet.</div>';return}el.innerHTML=list.map((m,i)=>`<div class="meal"><div class="mealmain"><div class="mealname">${esc(m.name)}</div><div class="mealmeta">${esc(m.type)}${m.serving?' · '+esc(m.serving):''} · P ${Math.round(m.p)}g · C ${Math.round(m.c)}g · F ${Math.round(m.f)}g</div></div><div class="mealcal">${Math.round(m.cal)}<div class="muted" style="font-size:11px">kcal</div></div><button class="ghost iconbtn" onclick="deleteMeal(${i})">✕</button></div>`).join('')}
+function renderHistory(){let base=new Date(dayKey()+'T12:00:00'),rows=[];for(let i=0;i<7;i++){let d=new Date(base);d.setDate(base.getDate()-i);let k=d.toISOString().slice(0,10),t=totals(state.days[k]||[]);rows.push(`<div class="meal"><div class="mealmain"><div class="mealname">${i===0?'Selected day':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</div><div class="mealmeta">Protein ${Math.round(t.p)}g</div></div><div class="mealcal">${Math.round(t.cal)}<div class="muted" style="font-size:11px">kcal</div></div></div>`)}history.innerHTML=rows.join('')}
+function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function shiftDate(n){let d=new Date(dayKey()+'T12:00:00');d.setDate(d.getDate()+n);datePick.value=d.toISOString().slice(0,10);render()}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function backdrop(e,id){if(e.target.id===id)closeModal(id)}
+function openPhoto(){resetPhoto();openModal('photoModal')}
+function openManual(){['mName','mServing','mCal','mP','mC','mF','mFiber'].forEach(id=>document.getElementById(id).value='');openModal('manualModal')}
+function previewPhoto(){const f=photoInput.files[0];if(!f)return;preview.src=URL.createObjectURL(f);preview.style.display='block';photoHint.classList.add('hidden')}
+function resetPhoto(){photoInput.value='';preview.removeAttribute('src');preview.style.display='none';photoHint.classList.remove('hidden');analysisResults.classList.add('hidden');analysisNote.classList.add('hidden');foodRows.innerHTML='';analysisFoods=[];analyzeBtn.disabled=false;analyzeBtn.textContent='Analyze photo'}
+function addMeal(m){state.days[dayKey()] ||= [];state.days[dayKey()].push({...m,id:crypto.randomUUID?.()||Date.now()+Math.random()});persist();render()}
+function saveManual(){if(!mName.value.trim()){alert('Add a food or meal name.');return}addMeal({type:manualMealType.value,name:mName.value.trim(),serving:mServing.value.trim(),cal:num(mCal.value),p:num(mP.value),c:num(mC.value),f:num(mF.value),fiber:num(mFiber.value)});closeModal('manualModal')}
+function deleteMeal(i){if(confirm('Delete this entry?')){state.days[dayKey()].splice(i,1);persist();render()}}
+async function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+async function analyzePhoto(){const file=photoInput.files[0];if(!file){alert('Take or choose a photo first.');return}analyzeBtn.disabled=true;analyzeBtn.textContent='Analyzing…';analysisNote.className='notice';analysisNote.textContent='Estimating foods, portions and macros. Review the result before saving.';try{const image=await fileToDataURL(file);const base=(state.settings.api||'').replace(/\/$/,'');const url=base?base+'/api/analyze':'/api/analyze';const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image})});if(!r.ok)throw new Error(await r.text()||'Analysis failed');const data=await r.json();analysisFoods=Array.isArray(data.foods)?data.foods:[];if(!analysisFoods.length)throw new Error('No foods returned');renderFoodRows();analysisResults.classList.remove('hidden');analysisNote.classList.add('success');analysisNote.textContent=data.note||'Estimate ready. Adjust portions or macros if needed.'}catch(e){analysisNote.className='notice';analysisNote.innerHTML='<b>AI analysis is not connected on this deployment yet.</b><br>You can still log this meal manually now. Once the secure backend is deployed, photo analysis will work here without exposing your API key.'}finally{analyzeBtn.disabled=false;analyzeBtn.textContent='Analyze photo'}}
+function renderFoodRows(){foodRows.innerHTML='';analysisFoods.forEach((f,i)=>addFoodRow(f,i))}
+function addFoodRow(f={name:'Food item',serving:'',cal:0,p:0,c:0,f:0,fiber:0},idx=null){if(idx===null){analysisFoods.push(f);idx=analysisFoods.length-1}const el=document.createElement('div');el.className='foodrow';el.dataset.i=idx;el.innerHTML=`<div class="head"><input value="${esc(f.name||'')}" data-k="name"><button class="ghost iconbtn" onclick="removeFood(${idx})">✕</button></div><div style="margin-top:6px"><input value="${esc(f.serving||'')}" placeholder="portion / serving" data-k="serving"></div><div class="nums"><label><small>kcal</small><input type="number" value="${num(f.cal)}" data-k="cal"></label><label><small>P g</small><input type="number" value="${num(f.p)}" data-k="p"></label><label><small>C g</small><input type="number" value="${num(f.c)}" data-k="c"></label><label><small>F g</small><input type="number" value="${num(f.f)}" data-k="f"></label></div>`;el.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{const k=inp.dataset.k;analysisFoods[idx][k]=['cal','p','c','f'].includes(k)?num(inp.value):inp.value});foodRows.appendChild(el)}
+function removeFood(i){analysisFoods.splice(i,1);renderFoodRows()}
+function saveAnalyzedMeal(){if(!analysisFoods.length)return;const t=analysisFoods.reduce((a,f)=>{a.cal+=num(f.cal);a.p+=num(f.p);a.c+=num(f.c);a.f+=num(f.f);a.fiber+=num(f.fiber);return a},{cal:0,p:0,c:0,f:0,fiber:0});addMeal({type:photoMealType.value,name:analysisFoods.map(f=>f.name).join(', '),serving:analysisFoods.map(f=>f.serving).filter(Boolean).join(' + '),...t,source:'photo'});closeModal('photoModal')}
+function openSettings(){sCal.value=state.settings.cal;sP.value=state.settings.p;sC.value=state.settings.c;sF.value=state.settings.f;sApi.value=state.settings.api||'';openModal('settingsModal')}
+function saveSettings(){state.settings={cal:num(sCal.value)||2200,p:num(sP.value)||180,c:num(sC.value)||220,f:num(sF.value)||70,api:sApi.value.trim()};persist();render();closeModal('settingsModal')}
+function clearAll(){if(confirm('Delete all logged meals? This cannot be undone.')){state.days={};persist();render();closeModal('settingsModal')}}
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>

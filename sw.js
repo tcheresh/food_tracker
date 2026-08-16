@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v3';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./barcode.js'];
+const CACHE='food-tracker-v4';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./barcode.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -18,13 +18,13 @@ async function appResponse(request){
   try{
     const fresh=await fetch(request,{cache:'no-store'});
     let html=await fresh.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=3"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=4"></script></body>');
     return new Response(html,{status:fresh.status,statusText:fresh.statusText,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }catch{
     const cached=await caches.match('./index.html');
     if(!cached) return new Response('Offline',{status:503});
     let html=await cached.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=3"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=4"></script></body>');
     return new Response(html,{headers:{'content-type':'text/html; charset=utf-8'}});
   }
 }

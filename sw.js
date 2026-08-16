@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v2';
-const ASSETS=['./','./index.html','./manifest.webmanifest'];
+const CACHE='food-tracker-v3';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./barcode.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -14,20 +14,26 @@ self.addEventListener('activate',event=>{
   })());
 });
 
+async function appResponse(request){
+  try{
+    const fresh=await fetch(request,{cache:'no-store'});
+    let html=await fresh.text();
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=3"></script></body>');
+    return new Response(html,{status:fresh.status,statusText:fresh.statusText,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
+  }catch{
+    const cached=await caches.match('./index.html');
+    if(!cached) return new Response('Offline',{status:503});
+    let html=await cached.text();
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=3"></script></body>');
+    return new Response(html,{headers:{'content-type':'text/html; charset=utf-8'}});
+  }
+}
+
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
   const url=new URL(event.request.url);
   if(event.request.mode==='navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/food_tracker/')){
-    event.respondWith((async()=>{
-      try{
-        const fresh=await fetch(event.request,{cache:'no-store'});
-        const cache=await caches.open(CACHE);
-        cache.put(event.request,fresh.clone());
-        return fresh;
-      }catch{
-        return (await caches.match(event.request)) || (await caches.match('./index.html'));
-      }
-    })());
+    event.respondWith(appResponse(event.request));
     return;
   }
   event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(resp=>{

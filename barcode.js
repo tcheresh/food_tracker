@@ -13,20 +13,31 @@ function inject(){
   modal.innerHTML=`<div class="sheet">
     <div class="sectionhead"><h2 style="margin:0">Scan barcode</h2><button class="ghost" id="barcodeClose">✕</button></div>
     <div class="field"><label>Meal</label><select id="barcodeMealType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select></div>
+
     <div id="barcodeCameraBox" style="position:relative;background:#090d12;border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:260px;display:flex;align-items:center;justify-content:center">
       <video id="barcodeVideo" autoplay playsinline muted style="width:100%;height:300px;object-fit:cover"></video>
       <div style="position:absolute;inset:22% 10%;border:3px solid #39d98a;border-radius:16px;pointer-events:none"></div>
       <div id="barcodeCameraMsg" style="position:absolute;bottom:12px;left:12px;right:12px;text-align:center;background:#0009;border-radius:10px;padding:8px;color:#fff;font-size:13px">Starting camera…</div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px"><button class="ghost" id="barcodeRestart" style="flex:1">Restart camera</button><button class="ghost" id="barcodeTorch" style="flex:1;display:none">Flash</button></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <button class="ghost" id="barcodeRestart">Live camera</button>
+      <button class="ghost" id="barcodePhotoBtn">Take barcode photo</button>
+    </div>
+    <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" style="display:none">
+    <div id="barcodePhotoPreviewWrap" class="hidden" style="margin-top:10px"><img id="barcodePhotoPreview" alt="Barcode photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:#090d12"></div>
+
     <div class="field"><label>Or enter barcode number</label><div style="display:flex;gap:8px"><input id="barcodeInput" inputmode="numeric" placeholder="UPC / EAN"><button id="barcodeLookup">Look up</button></div></div>
     <div id="barcodeStatus" class="notice hidden"></div>
     <div id="barcodeResult" class="hidden"></div>
   </div>`;
+
   modal.onclick=e=>{if(e.target===modal)closeScanner()};
   document.body.appendChild(modal);
   document.getElementById('barcodeClose').onclick=closeScanner;
   document.getElementById('barcodeRestart').onclick=startCamera;
+  document.getElementById('barcodePhotoBtn').onclick=()=>document.getElementById('barcodePhotoInput').click();
+  document.getElementById('barcodePhotoInput').onchange=decodeBarcodePhoto;
   document.getElementById('barcodeLookup').onclick=()=>lookupBarcode(document.getElementById('barcodeInput').value.trim());
 }
 
@@ -40,6 +51,7 @@ async function startCamera(){
   stopCamera();
   const video=document.getElementById('barcodeVideo');
   video.style.display='block';
+  document.getElementById('barcodePhotoPreviewWrap').classList.add('hidden');
   setCameraMsg('Starting camera…');
   scanning=true;
 
@@ -54,20 +66,16 @@ async function startCamera(){
         setCameraMsg('Point the camera at the barcode');
         scanTimer=setInterval(async()=>{
           if(!scanning) return;
-          try{
-            const codes=await detector.detect(video);
-            if(codes.length) foundBarcode(codes[0].rawValue);
-          }catch{}
+          try{const codes=await detector.detect(video);if(codes.length)foundBarcode(codes[0].rawValue)}catch{}
         },350);
-        setupTorch(stream);
         return;
       }
     }
     await startZXing(video);
   }catch(e){
     console.error('Barcode camera error',e);
-    setCameraMsg(cameraErrorMessage(e));
-    showStatus('Camera scanner could not start. You can still type the barcode number below.');
+    setCameraMsg('Live camera could not start. Use “Take barcode photo” below.');
+    showStatus('Live scanning is blocked on this browser. Tap “Take barcode photo” — it uses your phone camera app instead.');
   }
 }
 
@@ -93,56 +101,50 @@ async function startZXing(video){
   zxingControls=await reader.decodeFromConstraints(
     {video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false},
     video,
-    (result,error,controls)=>{
-      if(result&&scanning){
-        const text=typeof result.getText==='function'?result.getText():String(result.text||result);
-        foundBarcode(text);
-      }
-    }
+    result=>{if(result&&scanning){const text=typeof result.getText==='function'?result.getText():String(result.text||result);foundBarcode(text)}}
   );
-  try{
-    const mediaStream=video.srcObject;
-    if(mediaStream) setupTorch(mediaStream,zxingControls);
-  }catch{}
 }
 
-function setupTorch(mediaStream,controls){
-  const btn=document.getElementById('barcodeTorch');
+async function decodeBarcodePhoto(){
+  const input=document.getElementById('barcodePhotoInput');
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  stopCamera();
+  showStatus('Reading barcode from photo…');
+  const url=URL.createObjectURL(file);
+  const preview=document.getElementById('barcodePhotoPreview');
+  preview.src=url;
+  document.getElementById('barcodePhotoPreviewWrap').classList.remove('hidden');
+  document.getElementById('barcodeVideo').style.display='none';
+  setCameraMsg('Reading barcode photo…');
   try{
-    const track=mediaStream.getVideoTracks()[0];
-    const caps=track?.getCapabilities?.();
-    if(caps?.torch){
-      btn.style.display='block';
-      let on=false;
-      btn.onclick=async()=>{on=!on;try{await track.applyConstraints({advanced:[{torch:on}]});btn.textContent=on?'Flash off':'Flash'}catch{}};
-    }else if(controls?.switchTorch){
-      btn.style.display='block';
-      btn.onclick=()=>controls.switchTorch();
-    }
-  }catch{}
+    await loadZXing();
+    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    const result=await reader.decodeFromImageUrl(url);
+    const code=typeof result.getText==='function'?result.getText():String(result.text||result);
+    foundBarcode(code,true);
+  }catch(e){
+    console.error('Photo barcode decode failed',e);
+    setCameraMsg('Could not read barcode from this photo.');
+    showStatus('I could not read that barcode. Try again closer, keep the barcode flat, fill most of the frame, and avoid glare.');
+  }finally{
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    input.value='';
+  }
 }
 
-function foundBarcode(code){
+function foundBarcode(code,fromPhoto=false){
   code=String(code||'').replace(/\D/g,'');
-  if(!code||!scanning) return;
+  if(!code) return;
   scanning=false;
   document.getElementById('barcodeInput').value=code;
-  setCameraMsg('Barcode found ✓');
+  setCameraMsg(fromPhoto?'Barcode found in photo ✓':'Barcode found ✓');
   if(navigator.vibrate) navigator.vibrate(80);
   stopCamera(false);
   lookupBarcode(code);
 }
 
-function cameraErrorMessage(e){
-  const name=e?.name||'';
-  if(name==='NotAllowedError') return 'Camera permission was denied. Allow camera access in your browser settings.';
-  if(name==='NotFoundError') return 'No camera was found.';
-  if(name==='NotReadableError') return 'The camera is busy in another app.';
-  return 'Camera scanner unavailable. Enter the barcode below.';
-}
-
 function setCameraMsg(t){const el=document.getElementById('barcodeCameraMsg');if(el)el.textContent=t}
-
 function stopCamera(clear=true){
   scanning=false;
   if(scanTimer){clearInterval(scanTimer);scanTimer=null}
@@ -150,9 +152,7 @@ function stopCamera(clear=true){
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   const video=document.getElementById('barcodeVideo');
   if(video?.srcObject){try{video.srcObject.getTracks().forEach(t=>t.stop())}catch{}video.srcObject=null}
-  if(clear){const torch=document.getElementById('barcodeTorch');if(torch){torch.style.display='none';torch.textContent='Flash'}}
 }
-
 function closeScanner(){stopCamera();document.getElementById('barcodeModal').classList.remove('open')}
 function resetResult(){
   scannedItem=null;
@@ -160,6 +160,7 @@ function resetResult(){
   document.getElementById('barcodeResult').classList.add('hidden');
   document.getElementById('barcodeResult').innerHTML='';
   document.getElementById('barcodeInput').value='';
+  document.getElementById('barcodePhotoPreviewWrap').classList.add('hidden');
 }
 function val(o,k){const x=Number(o?.[k]);return Number.isFinite(x)?x:null}
 function round(x){return Math.round((Number(x)||0)*10)/10}
@@ -172,7 +173,7 @@ async function lookupBarcode(code){
     const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`);
     if(!r.ok) throw new Error('lookup failed');
     const data=await r.json();
-    if(data.status!==1||!data.product){showStatus('Barcode scanned, but this product was not found. You can add the nutrition manually.');renderBlankResult(code);return}
+    if(data.status!==1||!data.product){showStatus('Barcode read successfully, but this product is not in the database. You can enter its nutrition below.');renderBlankResult(code);return}
     const p=data.product,nut=p.nutriments||{};
     let servingQty=Number(p.serving_quantity)||null;
     if(!servingQty&&p.serving_size){const m=String(p.serving_size).match(/([\d.]+)\s*g/i);if(m)servingQty=Number(m[1])}
@@ -185,7 +186,7 @@ async function lookupBarcode(code){
     renderResult();showStatus('Product found. Check the serving and macros before saving.');
   }catch(e){
     console.error(e);
-    showStatus('Barcode scanned, but product lookup failed. You can enter the nutrition below.');
+    showStatus('Barcode read, but product lookup failed. You can enter the nutrition below.');
     renderBlankResult(code);
   }
 }

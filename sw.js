@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v10';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js'];
+const CACHE='food-tracker-v11';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js','./photo-smart.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -18,15 +18,17 @@ async function appResponse(request){
   try{
     const fresh=await fetch(request,{cache:'no-store'});
     let html=await fresh.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=10"></script></body>');
-    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=10"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=11"></script></body>');
+    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=11"></script></body>');
+    if(!html.includes('photo-smart.js')) html=html.replace('</body>','<script src="./photo-smart.js?v=11"></script></body>');
     return new Response(html,{status:fresh.status,statusText:fresh.statusText,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }catch{
     const cached=await caches.match('./index.html');
     if(!cached) return new Response('Offline',{status:503});
     let html=await cached.text();
-    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=10"></script></body>');
-    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=10"></script></body>');
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=11"></script></body>');
+    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=11"></script></body>');
+    if(!html.includes('photo-smart.js')) html=html.replace('</body>','<script src="./photo-smart.js?v=11"></script></body>');
     return new Response(html,{headers:{'content-type':'text/html; charset=utf-8'}});
   }
 }
@@ -42,7 +44,7 @@ self.addEventListener('fetch',event=>{
     event.respondWith(appResponse(event.request));
     return;
   }
-  if(url.pathname.endsWith('/barcode.js') || url.pathname.endsWith('/install.js')){
+  if(url.pathname.endsWith('/barcode.js') || url.pathname.endsWith('/install.js') || url.pathname.endsWith('/photo-smart.js')){
     event.respondWith(networkFirst(event.request));
     return;
   }

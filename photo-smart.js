@@ -6,7 +6,7 @@ function loadTesseract(){
   if(window.__foodTrackerTessLoading) return window.__foodTrackerTessLoading;
   window.__foodTrackerTessLoading=new Promise((resolve,reject)=>{
     const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
     s.async=true;
     s.onload=()=>window.Tesseract?resolve():reject(new Error('OCR library failed to load'));
     s.onerror=()=>reject(new Error('OCR library failed to load'));
@@ -38,14 +38,35 @@ function cleanFoodText(text){
 
 function looksTextHeavy(rawText,foods){
   const letters=(rawText.match(/[A-Za-z]/g)||[]).length;
-  return foods.length>=3 || letters>=45;
+  return foods.length>=3 || letters>=35;
+}
+
+async function recognizeText(file){
+  await loadTesseract();
+  note('Starting text reader…');
+  const worker=await Tesseract.createWorker('eng',1,{
+    workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+    langPath:'https://tessdata.projectnaptha.com/4.0.0',
+    corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+    logger:m=>{
+      if(m.status==='loading tesseract core') note('Loading text reader…');
+      if(m.status==='loading language traineddata') note('Loading English text model…');
+      if(m.status==='recognizing text') note(`Reading image text… ${Math.round((m.progress||0)*100)}%`);
+    }
+  });
+  try{
+    const result=await worker.recognize(file,{rotateAuto:true});
+    return result?.data?.text||'';
+  } finally {
+    await worker.terminate();
+  }
 }
 
 async function useAsDescription(foods){
   const type=document.getElementById('photoMealType')?.value || 'Breakfast';
   if(typeof closeModal==='function') closeModal('photoModal');
   if(typeof openManual==='function') openManual();
-  await new Promise(r=>setTimeout(r,60));
+  await new Promise(r=>setTimeout(r,80));
   const mealType=document.getElementById('manualMealType');
   const desc=document.getElementById('mealDescription');
   if(mealType) mealType.value=type;
@@ -58,25 +79,22 @@ window.analyzePhoto=async function(){
   const file=input?.files?.[0];
   if(!file){alert('Choose a photo first.');return}
 
-  note('Checking whether this is a food photo, receipt, or menu…');
+  note('Checking whether this is a receipt/menu or a food photo…');
   try{
-    await loadTesseract();
-    const result=await Tesseract.recognize(file,'eng',{logger:m=>{
-      if(m.status==='recognizing text') note(`Reading image text… ${Math.round((m.progress||0)*100)}%`);
-    }});
-    const raw=result?.data?.text||'';
+    const raw=await recognizeText(file);
     const foods=cleanFoodText(raw);
     if(looksTextHeavy(raw,foods)){
-      if(!foods.length){note('I found text, but not enough food items. Try a closer photo.');return}
+      if(!foods.length){note('I found text, but not enough food items. Try a closer, straighter photo.');return}
       note(`Found ${foods.length} possible food items. Opening the editable macro breakdown…`);
       await useAsDescription(foods);
       return;
     }
   }catch(e){
-    console.warn('OCR check skipped',e);
+    console.error('Receipt/menu OCR failed',e);
+    note('Text reading failed on this image. If this is a receipt/menu, try a closer photo with less glare.');
+    return;
   }
 
-  if(typeof originalAnalyze==='function') return originalAnalyze();
-  note('This looks like a food photo, but photo AI is not connected on this deployment yet.');
+  note('This appears to be a food photo. Plate-photo AI needs a secure backend and is disabled in the GitHub-Pages-only version.');
 };
 })();

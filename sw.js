@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v9';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='food-tracker-v10';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -14,28 +14,25 @@ self.addEventListener('activate',event=>{
   })());
 });
 
-function injectScripts(html){
-  if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=9"></script></body>');
-  if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=9"></script></body>');
-  return html;
-}
-
 async function appResponse(request){
   try{
     const fresh=await fetch(request,{cache:'no-store'});
-    const html=injectScripts(await fresh.text());
+    let html=await fresh.text();
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=10"></script></body>');
+    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=10"></script></body>');
     return new Response(html,{status:fresh.status,statusText:fresh.statusText,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }catch{
     const cached=await caches.match('./index.html');
     if(!cached) return new Response('Offline',{status:503});
-    const html=injectScripts(await cached.text());
+    let html=await cached.text();
+    if(!html.includes('barcode.js')) html=html.replace('</body>','<script src="./barcode.js?v=10"></script></body>');
+    if(!html.includes('install.js')) html=html.replace('</body>','<script src="./install.js?v=10"></script></body>');
     return new Response(html,{headers:{'content-type':'text/html; charset=utf-8'}});
   }
 }
 
 async function networkFirst(request){
-  try{return await fetch(request,{cache:'no-store'})}
-  catch{return (await caches.match(request)) || new Response('',{status:504})}
+  try{return await fetch(request,{cache:'no-store'});}catch{return (await caches.match(request)) || new Response('',{status:504});}
 }
 
 self.addEventListener('fetch',event=>{

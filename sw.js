@@ -1,5 +1,5 @@
-const CACHE='food-tracker-v19';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js','./photo-smart.js'];
+const CACHE='food-tracker-v20';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js','./photo-smart.js','./food-db.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -35,7 +35,7 @@ self.addEventListener('fetch',event=>{
     event.respondWith(appResponse(event.request));
     return;
   }
-  if(url.pathname.endsWith('/barcode.js') || url.pathname.endsWith('/install.js') || url.pathname.endsWith('/photo-smart.js')){
+  if(url.pathname.endsWith('/barcode.js') || url.pathname.endsWith('/install.js') || url.pathname.endsWith('/photo-smart.js') || url.pathname.endsWith('/food-db.js')){
     event.respondWith(networkFirst(event.request));
     return;
   }

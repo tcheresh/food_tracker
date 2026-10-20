@@ -24,7 +24,7 @@ function inject(){
       <button class="ghost" id="barcodeRestart">Live camera</button>
       <button class="ghost" id="barcodePhotoBtn">Take barcode photo</button>
     </div>
-    <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" style="display:none">
+    <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" style="display:none"><div id="barcodeFileScanner" style="display:none"></div>
     <div id="barcodePhotoPreviewWrap" class="hidden" style="margin-top:10px"><img id="barcodePhotoPreview" alt="Barcode photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:12px;background:#090d12"></div>
 
     <div class="field"><label>Or enter barcode number</label><div style="display:flex;gap:8px"><input id="barcodeInput" inputmode="numeric" placeholder="UPC / EAN"><button id="barcodeLookup">Look up</button></div></div>
@@ -79,6 +79,20 @@ async function startCamera(){
   }
 }
 
+function loadHtml5QrCode(){
+  if(window.Html5Qrcode) return Promise.resolve();
+  if(window.__html5QrLoading) return window.__html5QrLoading;
+  window.__html5QrLoading=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    s.async=true;
+    s.onload=()=>window.Html5Qrcode?resolve():reject(new Error('html5-qrcode did not load'));
+    s.onerror=()=>reject(new Error('html5-qrcode failed to load'));
+    document.head.appendChild(s);
+  });
+  return window.__html5QrLoading;
+}
+
 function loadZXing(){
   if(window.ZXingBrowser) return Promise.resolve();
   if(window.__zxingLoading) return window.__zxingLoading;
@@ -120,6 +134,26 @@ async function decodeBarcodePhoto(){
   setCameraMsg('Reading barcode photo…');
 
   try{
+    // 1) Best still-image path: html5-qrcode
+    try{
+      await loadHtml5QrCode();
+      const scanner=new Html5Qrcode('barcodeFileScanner',false);
+      try{
+        let result;
+        if(typeof scanner.scanFileV2==='function'){
+          result=await scanner.scanFileV2(file,true);
+          const text=result?.decodedText || result?.result?.text || '';
+          if(text){ foundBarcode(text,true); return; }
+        }else if(typeof scanner.scanFile==='function'){
+          const text=await scanner.scanFile(file,true);
+          if(text){ foundBarcode(text,true); return; }
+        }
+      } finally {
+        try{await scanner.clear()}catch{}
+      }
+    }catch(e){console.warn('html5-qrcode photo scan failed',e)}
+
+    // 2) Native browser barcode detector
     const img=new Image();
     img.decoding='async';
     img.src=url;
@@ -140,6 +174,7 @@ async function decodeBarcodePhoto(){
       }catch(e){console.warn('Native photo barcode detection failed',e)}
     }
 
+    // 3) ZXing fallback
     await loadZXing();
     const reader=new ZXingBrowser.BrowserMultiFormatReader();
     let result=null;
@@ -147,16 +182,15 @@ async function decodeBarcodePhoto(){
       result=await reader.decodeFromImageElement(img);
     }else if(typeof reader.decodeFromImageUrl==='function'){
       result=await reader.decodeFromImageUrl(url);
-    }else{
-      throw new Error('No supported image decode method');
     }
     const code=typeof result?.getText==='function'?result.getText():String(result?.text||'');
-    if(!code) throw new Error('No barcode found');
-    foundBarcode(code,true);
+    if(code){ foundBarcode(code,true); return; }
+
+    throw new Error('No barcode found');
   }catch(e){
     console.error('Photo barcode decode failed',e);
     setCameraMsg('Could not read barcode from this photo.');
-    showStatus('I could not read that barcode. Take the photo straight-on, make the barcode fill most of the frame, and avoid glare or blur.');
+    showStatus('I still could not decode that barcode. Try moving a little closer so the barcode itself fills more of the photo.');
   }finally{
     setTimeout(()=>URL.revokeObjectURL(url),30000);
     input.value='';

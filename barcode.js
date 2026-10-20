@@ -109,6 +109,7 @@ async function decodeBarcodePhoto(){
   const input=document.getElementById('barcodePhotoInput');
   const file=input.files&&input.files[0];
   if(!file) return;
+
   stopCamera();
   showStatus('Reading barcode from photo…');
   const url=URL.createObjectURL(file);
@@ -117,22 +118,50 @@ async function decodeBarcodePhoto(){
   document.getElementById('barcodePhotoPreviewWrap').classList.remove('hidden');
   document.getElementById('barcodeVideo').style.display='none';
   setCameraMsg('Reading barcode photo…');
+
   try{
+    const img=new Image();
+    img.decoding='async';
+    img.src=url;
+    await img.decode();
+
+    if('BarcodeDetector' in window){
+      try{
+        const supported=await BarcodeDetector.getSupportedFormats();
+        const formats=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf'].filter(x=>supported.includes(x));
+        if(formats.length){
+          const detector=new BarcodeDetector({formats});
+          const codes=await detector.detect(img);
+          if(codes&&codes.length){
+            foundBarcode(codes[0].rawValue,true);
+            return;
+          }
+        }
+      }catch(e){console.warn('Native photo barcode detection failed',e)}
+    }
+
     await loadZXing();
     const reader=new ZXingBrowser.BrowserMultiFormatReader();
-    const result=await reader.decodeFromImageUrl(url);
-    const code=typeof result.getText==='function'?result.getText():String(result.text||result);
+    let result=null;
+    if(typeof reader.decodeFromImageElement==='function'){
+      result=await reader.decodeFromImageElement(img);
+    }else if(typeof reader.decodeFromImageUrl==='function'){
+      result=await reader.decodeFromImageUrl(url);
+    }else{
+      throw new Error('No supported image decode method');
+    }
+    const code=typeof result?.getText==='function'?result.getText():String(result?.text||'');
+    if(!code) throw new Error('No barcode found');
     foundBarcode(code,true);
   }catch(e){
     console.error('Photo barcode decode failed',e);
     setCameraMsg('Could not read barcode from this photo.');
-    showStatus('I could not read that barcode. Try again closer, keep the barcode flat, fill most of the frame, and avoid glare.');
+    showStatus('I could not read that barcode. Take the photo straight-on, make the barcode fill most of the frame, and avoid glare or blur.');
   }finally{
     setTimeout(()=>URL.revokeObjectURL(url),30000);
     input.value='';
   }
 }
-
 function foundBarcode(code,fromPhoto=false){
   code=String(code||'').replace(/\D/g,'');
   if(!code) return;

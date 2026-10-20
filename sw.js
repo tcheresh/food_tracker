@@ -1,4 +1,4 @@
-const CACHE='food-tracker-v18';
+const CACHE='food-tracker-v19';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./install.js','./photo-smart.js'];
 
 self.addEventListener('install',event=>{

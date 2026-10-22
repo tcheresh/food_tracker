@@ -240,12 +240,12 @@ async function lookupBarcode(code){
     const p=data.product,nut=p.nutriments||{};
     let servingQty=Number(p.serving_quantity)||null;
     if(!servingQty&&p.serving_size){const m=String(p.serving_size).match(/([\d.]+)\s*g/i);if(m)servingQty=Number(m[1])}
-    const mult=servingQty?servingQty/100:1;
-    const kcal=val(nut,'energy-kcal_serving')??((val(nut,'energy-kcal_100g')??0)*mult);
-    const protein=val(nut,'proteins_serving')??((val(nut,'proteins_100g')??0)*mult);
-    const carbs=val(nut,'carbohydrates_serving')??((val(nut,'carbohydrates_100g')??0)*mult);
-    const fat=val(nut,'fat_serving')??((val(nut,'fat_100g')??0)*mult);
-    scannedItem={name:[p.product_name,p.brands].filter(Boolean).join(' — ')||`Barcode ${code}`,serving:p.serving_size||(servingQty?`${servingQty} g`:'100 g'),cal:round(kcal),p:round(protein),c:round(carbs),f:round(fat)};
+    const grams=servingQty||100;
+    const kcal100=val(nut,'energy-kcal_100g')??(servingQty&&val(nut,'energy-kcal_serving')!=null?val(nut,'energy-kcal_serving')*100/servingQty:0);
+    const protein100=val(nut,'proteins_100g')??(servingQty&&val(nut,'proteins_serving')!=null?val(nut,'proteins_serving')*100/servingQty:0);
+    const carbs100=val(nut,'carbohydrates_100g')??(servingQty&&val(nut,'carbohydrates_serving')!=null?val(nut,'carbohydrates_serving')*100/servingQty:0);
+    const fat100=val(nut,'fat_100g')??(servingQty&&val(nut,'fat_serving')!=null?val(nut,'fat_serving')*100/servingQty:0);
+    scannedItem={name:[p.product_name,p.brands].filter(Boolean).join(' — ')||`Barcode ${code}`,grams:round(grams),serving:`${round(grams)} g`,per100:{cal:round(kcal100),p:round(protein100),c:round(carbs100),f:round(fat100)},cal:round(kcal100*grams/100),p:round(protein100*grams/100),c:round(carbs100*grams/100),f:round(fat100*grams/100)};
     renderResult();showStatus('Product found. Check the serving and macros before saving.');
   }catch(e){
     console.error(e);
@@ -254,17 +254,32 @@ async function lookupBarcode(code){
   }
 }
 
-function renderBlankResult(code){scannedItem={name:`Barcode ${code}`,serving:'1 serving',cal:0,p:0,c:0,f:0};renderResult()}
+function renderBlankResult(code){scannedItem={name:`Barcode ${code}`,grams:100,serving:'100 g',per100:{cal:0,p:0,c:0,f:0},cal:0,p:0,c:0,f:0};renderResult()}
 function showStatus(t){const el=document.getElementById('barcodeStatus');el.textContent=t;el.classList.remove('hidden')}
 function renderResult(){
   const x=scannedItem,el=document.getElementById('barcodeResult');el.classList.remove('hidden');
-  el.innerHTML=`<div class="foodrow"><div class="field"><label>Food</label><input id="bcName" value="${esc2(x.name)}"></div><div class="field"><label>Serving</label><input id="bcServing" value="${esc2(x.serving)}"></div><div class="nums"><label><small>kcal</small><input id="bcCal" type="number" value="${x.cal}"></label><label><small>P g</small><input id="bcP" type="number" value="${x.p}"></label><label><small>C g</small><input id="bcC" type="number" value="${x.c}"></label><label><small>F g</small><input id="bcF" type="number" value="${x.f}"></label></div></div><button id="bcSave" style="width:100%">Save food</button>`;
+  const grams=Number(x.grams)||Number((String(x.serving||'').match(/([\d.]+)\s*g/i)||[])[1])||100;
+  x.grams=grams;x.serving=round(grams)+' g';
+  if(!x.per100){const factor=grams?100/grams:1;x.per100={cal:round((x.cal||0)*factor),p:round((x.p||0)*factor),c:round((x.c||0)*factor),f:round((x.f||0)*factor)}}
+  el.innerHTML=`<div class="foodrow"><div class="field"><label>Food</label><input id="bcName" value="${esc2(x.name)}"></div><div class="field"><label>Amount (grams)</label><input id="bcGrams" type="number" min="0" step="1" inputmode="decimal" value="${round(grams)}"></div><small class="muted">Change grams and calories/macros update automatically.</small><div class="nums"><label><small>kcal</small><input id="bcCal" type="number" value="${x.cal}"></label><label><small>P g</small><input id="bcP" type="number" value="${x.p}"></label><label><small>C g</small><input id="bcC" type="number" value="${x.c}"></label><label><small>F g</small><input id="bcF" type="number" value="${x.f}"></label></div></div><button id="bcSave" style="width:100%">Save food</button>`;
+  document.getElementById('bcGrams').oninput=updateBarcodeGrams;
   document.getElementById('bcSave').onclick=saveBarcode;
+}
+function updateBarcodeGrams(){
+  if(!scannedItem)return;
+  const grams=Math.max(0,Number(document.getElementById('bcGrams').value)||0),b=scannedItem.per100||{cal:0,p:0,c:0,f:0},m=grams/100;
+  scannedItem.grams=grams;scannedItem.serving=round(grams)+' g';
+  scannedItem.cal=round(b.cal*m);scannedItem.p=round(b.p*m);scannedItem.c=round(b.c*m);scannedItem.f=round(b.f*m);
+  document.getElementById('bcCal').value=scannedItem.cal;
+  document.getElementById('bcP').value=scannedItem.p;
+  document.getElementById('bcC').value=scannedItem.c;
+  document.getElementById('bcF').value=scannedItem.f;
 }
 function esc2(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function saveBarcode(){
   if(typeof addMeal!=='function') return;
-  const m={type:document.getElementById('barcodeMealType').value,name:document.getElementById('bcName').value.trim()||'Scanned food',serving:document.getElementById('bcServing').value.trim(),cal:Number(document.getElementById('bcCal').value)||0,p:Number(document.getElementById('bcP').value)||0,c:Number(document.getElementById('bcC').value)||0,f:Number(document.getElementById('bcF').value)||0,source:'barcode'};
+  const name=document.getElementById('bcName').value.trim()||'Scanned food',grams=Math.max(0,Number(document.getElementById('bcGrams').value)||0),serving=round(grams)+' g',cal=Number(document.getElementById('bcCal').value)||0,p=Number(document.getElementById('bcP').value)||0,c=Number(document.getElementById('bcC').value)||0,f=Number(document.getElementById('bcF').value)||0;
+  const m={type:document.getElementById('barcodeMealType').value,name,serving,grams,cal,p,c,f,source:'barcode',foods:[{name,serving,grams,cal,p,c,f}]};
   addMeal(m);closeScanner();
 }
 
